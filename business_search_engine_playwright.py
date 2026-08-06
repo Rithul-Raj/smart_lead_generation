@@ -1,7 +1,32 @@
 """
-Module 2: Business Search Engine (Playwright version)
+Module 2: Business Search Engine (Playwright version - NO API KEY NEEDED)
 ----------------------------------------------------------------------------
-Smart Lead Generation AI Model 
+Smart Lead Generation AI Model | Detagenix Internship Project
+
+Why this version?
+    The Google Places API version needs a billing account. This version
+    instead opens a real (invisible) browser using Playwright, goes to
+    Google Maps, searches for businesses, and reads the results directly
+    off the page - like a human browsing, but automated. No API key,
+    no billing, no credit card needed.
+
+How it works, in plain words:
+    1. Open an invisible Chrome browser.
+    2. Go to Google Maps and search "<industry> in <location>".
+    3. Scroll the results list down (Google Maps loads more results as
+       you scroll, just like on your phone).
+    4. Read the business name + address off each result card.
+    5. Stop once we have enough leads, remove duplicates, and return them.
+
+IMPORTANT - please read before running:
+    - Google's HTML structure changes sometimes, which can break the
+      CSS selectors below. If it stops finding results, right-click a
+      business card on Google Maps in your own browser -> Inspect ->
+      find the matching element -> update the selector here.
+    - Keep small delays between actions (already built in) so we don't
+      hammer Google's servers - this keeps you from getting blocked.
+    - This is meant for learning/small internal demos, not large-scale
+      or production scraping.
 
 Setup (run these once in your VS Code terminal):
     pip install playwright
@@ -131,6 +156,8 @@ class BusinessSearchEnginePlaywright:
 
 # ---------------- Standalone test run ----------------
 if __name__ == "__main__":
+    from output_exporter import export_to_csv, export_to_json
+
     # CHANGE THESE THREE VALUES to search for whatever you want:
     engine = BusinessSearchEnginePlaywright(headless=False)  # False = watch it work
     candidates = engine.search(
@@ -142,3 +169,7 @@ if __name__ == "__main__":
     print(f"\n{len(candidates)} candidates found:\n")
     for c in candidates:
         print({k: v for k, v in asdict(c).items() if k != "raw"})
+
+    if candidates:
+        export_to_csv(candidates)
+        export_to_json(candidates)
