@@ -1,0 +1,4 @@
+company_name,address,location,industry,website,phone,company_size,source
+Infosys,"Bangalore, India","Bangalore, India",Information Technology,infosys.com,080 2852 0261,,google_maps_detail_scrape_async
+Wipro,"Bangalore, India","Bangalore, India",Information Technology,wipro.com,080 2844 0011,,google_maps_detail_scrape_async
+TCS,"Bangalore, India","Bangalore, India",Information Technology,tcs.com,080672 42000,,google_maps_detail_scrape_async

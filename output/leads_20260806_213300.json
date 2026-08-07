@@ -1,0 +1,76 @@
+{
+  "total_leads": 10,
+  "generated_at": "2026-08-06T21:33:00.673994",
+  "leads": [
+    {
+      "company_name": "IIIT-Bangalore (Ecity Campus)",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Vyshnavi Information Technologies (India) Pvt. Ltd",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Ivision Information Technologies Pvt Ltd",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Bangalore Institute of Technology",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Innohub Technologies India Pvt Ltd",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Cambridge Infotech - Artificial Intelligence | Data Science with AI | Data Analytics | Cybersecurity | Gen AI | Agentic AI",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Nitte Meenakshi Institute of Technology",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Starcom Information Technology Limited",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Cerulean Information Technology Pvt. Ltd.",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "IBeON INFOTECH PVT LTD - BEST IT SUPPORT COMPANY IN BANGALORE",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "source": "google_maps_scrape"
+    }
+  ]
+}

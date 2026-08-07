@@ -56,6 +56,29 @@ def export_to_csv(candidates: List, filename: str = None, folder: str = "output"
     return filepath
 
 
+def append_row_to_csv(row: dict, filepath: str) -> None:
+    """
+    Appends ONE row to a CSV file, writing the header first if the file
+    is brand new. Used for incremental saving - call this right after each
+    company is processed, instead of waiting to save everything at the end.
+
+    Why this matters: if the script crashes or gets rate-limited halfway
+    through 100 companies, you keep the 60 you already finished instead of
+    losing everything.
+    """
+    row = dict(row)
+    row.pop("raw", None)
+
+    file_exists = os.path.isfile(filepath)
+    os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
+
+    with open(filepath, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=row.keys())
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
+
+
 def export_to_json(candidates: List, filename: str = None, folder: str = "output") -> str:
     """
     Saves a list of BusinessCandidate objects to a JSON file.

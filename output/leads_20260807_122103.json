@@ -1,0 +1,86 @@
+{
+  "total_leads": 10,
+  "generated_at": "2026-08-07T12:21:03.230081",
+  "leads": [
+    {
+      "company_name": "IIIT-Bangalore (Ecity Campus)",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/IIIT-Bangalore+%28Ecity+Campus%29/data=!4m7!3m6!1s0x3bae135aeb7f340f:0x3ad86af40d2ac611!8m2!3d12.8449599!4d77.6632162!16zL20vMDJ5NWNw!19sChIJDzR_61oTrjsREcYqDfRq2Do?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Vyshnavi Information Technologies (India) Pvt. Ltd",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Vyshnavi+Information+Technologies+%28India%29+Pvt.+Ltd/data=!4m7!3m6!1s0x3bae167ee2c20f6f:0x31267f3f861396b6!8m2!3d12.9665897!4d77.5990306!16s%2Fg%2F11j4kd7kv4!19sChIJbw_C4n4WrjsRtpYThj9_JjE?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Bangalore Institute of Technology",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Bangalore+Institute+of+Technology/data=!4m7!3m6!1s0x3bae1592715c4e7f:0x7dfaf94e52204678!8m2!3d12.954859!4d77.5742242!16zL20vMGM5NGdw!19sChIJf05ccZIVrjsReEYgUk75-n0?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Ivision Information Technologies Pvt Ltd",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Ivision+Information+Technologies+Pvt+Ltd/data=!4m7!3m6!1s0x3bae15c2b2c97dd9:0xcb1db290816bf532!8m2!3d12.9554902!4d77.5855308!16s%2Fg%2F1tgckr7p!19sChIJ2X3JssIVrjsRMvVrgZCyHcs?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Cambridge Infotech - Artificial Intelligence | Data Science with AI | Data Analytics | Cybersecurity | Gen AI | Agentic AI",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Cambridge+Infotech+-+Artificial+Intelligence+%7C+Data+Science+with+AI+%7C+Data+Analytics+%7C+Cybersecurity+%7C+Gen+AI+%7C+Agentic+AI/data=!4m7!3m6!1s0x3bae16d8aa4f5307:0x324d8da1816ba343!8m2!3d13.0208241!4d77.6363638!16s%2Fg%2F11ng24fqqf!19sChIJB1NPqtgWrjsRQ6NrgaGNTTI?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Innohub Technologies India Pvt Ltd",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Innohub+Technologies+India+Pvt+Ltd/data=!4m7!3m6!1s0x3bae17ac99f2dc93:0xdeca4819e5bdb85b!8m2!3d12.9714496!4d77.5960298!16s%2Fg%2F11q2vn25jq!19sChIJk9zymawXrjsRW7i95RlIyt4?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Ramaiah Institute of Technology",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Ramaiah+Institute+of+Technology/data=!4m7!3m6!1s0x3bae17dedd4dcca9:0x6075bd8d8aed97ab!8m2!3d13.0307823!4d77.5649893!16zL20vMDVuM185!19sChIJqcxN3d4XrjsRq5ftio29dWA?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Starcom Information Technology Limited",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Starcom+Information+Technology+Limited/data=!4m7!3m6!1s0x3bae167c59c59bf7:0x9af23e64e95dc486!8m2!3d12.9817112!4d77.6014093!16s%2Fg%2F1jkyyl7dc!19sChIJ95vFWXwWrjsRhsRd6WQ-8po?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "IBeON INFOTECH PVT LTD - BEST IT SUPPORT COMPANY IN BANGALORE",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/IBeON+INFOTECH+PVT+LTD+-+BEST+IT+SUPPORT+COMPANY+IN+BANGALORE/data=!4m7!3m6!1s0x3bae15a28a8fcea3:0xfe273a8bd6c8a447!8m2!3d12.9158411!4d77.585894!16s%2Fg%2F1ptxfyn46!19sChIJo86PiqIVrjsRR6TI1os6J_4?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    },
+    {
+      "company_name": "Cerulean Information Technology Pvt. Ltd.",
+      "address": "",
+      "location": "Bangalore, India",
+      "industry": "Information Technology",
+      "maps_url": "https://www.google.com/maps/place/Cerulean+Information+Technology+Pvt.+Ltd./data=!4m7!3m6!1s0x3bae1451d6df6a7d:0xcf222002a39061f9!8m2!3d12.9339775!4d77.6231139!16s%2Fg%2F1tczyz51!19sChIJfWrf1lEUrjsR-WGQowIgIs8?authuser=0&hl=en&rclk=1",
+      "source": "google_maps_scrape"
+    }
+  ]
+}

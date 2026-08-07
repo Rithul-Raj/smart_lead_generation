@@ -50,6 +50,9 @@ class BusinessCandidate:
     address: str = None
     location: str = None
     industry: str = None
+    maps_url: str = None   # NEW: direct link to this business's Google Maps page.
+                            # Module 3 uses this to jump straight there instead
+                            # of re-searching, which is faster and safer.
     source: str = "google_maps_scrape"
     raw: dict = field(default_factory=dict)
 
@@ -127,6 +130,11 @@ class BusinessSearchEnginePlaywright:
                     address_el = card.query_selector('div[class*="fontBodyMedium"] span')
                     address = address_el.inner_text().strip() if address_el else None
 
+                    # NEW: each result card is wrapped in an <a> tag whose
+                    # href is the direct link to that business's Maps page.
+                    link_el = card.query_selector("a")
+                    maps_url = link_el.get_attribute("href") if link_el else None
+
                     seen_names.add(name)
                     results.append(
                         BusinessCandidate(
@@ -134,6 +142,7 @@ class BusinessSearchEnginePlaywright:
                             address=address,
                             location=location,
                             industry=industry,
+                            maps_url=maps_url,
                         )
                     )
                     if len(results) >= num_leads:
