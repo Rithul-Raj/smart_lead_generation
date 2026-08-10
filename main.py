@@ -22,15 +22,20 @@ Pipeline flow
           Opens each candidate's Maps page and scrapes: website, phone,
           address, category, rating, review count, website title/description.
 
-  Step 5  Module 4 -- Contact Discovery
+  Step 4  Module 4 -- Contact Discovery
           Crawls each company's website and extracts: emails, extra phone
           numbers, LinkedIn / social media links, contact page URL.
 
-  Step 6  Save current results
+  Step 6  Module 5 -- Lead Data Enrichment
+          Visits company websites + LinkedIn public pages and fills in:
+          company_size_range, year_founded, headquarters, company_description,
+          technologies_used, enrichment_source, data_completeness_score.
+
+  Step 7  Save current results
           output/current/current_leads.csv  <- this run's results
           output/current/current_leads.json <- this run's results
 
-  Step 7  Merge current into master (immediately, every run)
+  Step 8  Merge current into master (immediately, every run)
           output/master/master_leads.csv    <- all-time accumulated data
           output/master/master_leads.json   <- all-time accumulated data
           Master is ALWAYS up to date after every run.
@@ -50,6 +55,7 @@ from input_form import LeadInputForm
 from business_search_engine_playwright import BusinessSearchEnginePlaywright
 from company_data_extraction_async import AsyncCompanyDataExtractor
 from contact_discovery import ContactDiscovery
+from lead_data_enrichment import LeadDataEnricher
 from output_exporter import (
     save_current_output,
     merge_current_to_master,
@@ -130,8 +136,8 @@ def run_pipeline(params: dict) -> None:
     logger.info(f"Step 3 ✔  Enriched {len(enriched)} companies.")
     print()
 
-    # ── Step 5: Contact Discovery ─────────────────────────────────────────────
-    logger.info("Step 5 - Module 4: Contact Discovery starting ...")
+    # ── Step 4: Contact Discovery ──────────────────────────────────────────────
+    logger.info("Step 4 - Module 4: Contact Discovery starting ...")
     discoverer = ContactDiscovery(headless=True, concurrency=3)
 
     # Convert Module 3's dataclass objects to plain dicts for Module 4
@@ -141,34 +147,56 @@ def run_pipeline(params: dict) -> None:
     ]
     contact_enriched = discoverer.discover(enriched_dicts)
 
-    logger.info(f"Step 5 [OK]  Contact discovery done for {len(contact_enriched)} companies.")
+    logger.info(f"Step 4 [OK]  Contact discovery done for {len(contact_enriched)} companies.")
     print()
 
-    # ── Step 6: Save current output ──────────────────────────────────────────
-    logger.info("Step 6 - Saving current output files ...")
-    save_current_output(contact_enriched, search_params=params)
+    # ── Step 6: Lead Data Enrichment ──────────────────────────────────────────
+    logger.info("Step 6 - Module 5: Lead Data Enrichment starting ...")
+    enricher = LeadDataEnricher(headless=True, concurrency=3)
+
+    # Convert Module 4's dataclass objects to plain dicts for Module 5
+    contact_dicts = [
+        {k: v for k, v in asdict(c).items() if k != "raw"}
+        for c in contact_enriched
+    ]
+    lead_enriched = enricher.enrich(contact_dicts)
+
+    logger.info(f"Step 6 [OK]  Lead enrichment done for {len(lead_enriched)} companies.")
     print()
 
-    # ── Step 7: Merge current into master IMMEDIATELY ───────────────────────
-    # Master is updated right now, not deferred to the next run.
-    # This means master is ALWAYS fully up to date after every single run.
-    logger.info("Step 7 - Merging current leads into master ...")
+    # ── Step 7: Save current output ──────────────────────────────────────────
+    logger.info("Step 7 - Saving current output files ...")
+    save_current_output(lead_enriched, search_params=params)
+    print()
+
+    # ── Step 8: Merge current into master IMMEDIATELY ────────────────────────
+    logger.info("Step 8 - Merging current leads into master ...")
     merge_current_to_master()
     print()
 
-    # Count companies where at least one contact field was found
+    # ── Summary stats ────────────────────────────────────────────────────────
     contacts_found = sum(
         1 for c in contact_enriched
         if c and (c.emails or c.linkedin_url or c.phones_discovered)
+    )
+    enriched_count = sum(
+        1 for c in lead_enriched
+        if c and (c.company_size_range or c.year_founded or c.company_description)
+    )
+    avg_completeness = (
+        sum(c.data_completeness_score for c in lead_enriched if c)
+        / max(len(lead_enriched), 1)
     )
 
     # ── Summary ───────────────────────────────────────────────────────────────
     print("=" * 60)
     print(f"  [DONE]  Pipeline complete!")
     print(f"  -----------------------------------------")
-    print(f"  Candidates found   : {len(candidates)}")
-    print(f"  Companies enriched : {len(enriched)}")
-    print(f"  Contacts found     : {contacts_found}/{len(contact_enriched)}")
+    print(f"  Candidates found      : {len(candidates)}")
+    print(f"  Companies enriched    : {len(enriched)}")
+    print(f"  Contacts found        : {contacts_found}/{len(contact_enriched)}")
+    print(f"  Lead data enriched    : {enriched_count}/{len(lead_enriched)}")
+    print(f"  Avg completeness score: {avg_completeness:.0%}")
     print()
     print("  Output files:")
     print("  * output/current/current_leads.csv   <- this run's results")
@@ -178,11 +206,10 @@ def run_pipeline(params: dict) -> None:
     print("=" * 60)
 
     # ── Future modules placeholders ───────────────────────────────────────────
-    # TODO Step 7:  Module 5 -- Lead Data Enrichment
-    # TODO Step 8:  Module 6 -- Email Verification
-    # TODO Step 9:  Module 7 -- AI Lead Scoring
-    # TODO Step 10: Module 8 -- Deduplication & Quality Filtering
-    # TODO Step 11: Module 9 -- Output Formatting & CRM Export
+    # TODO Step 9:  Module 6 -- Email Verification
+    # TODO Step 10: Module 7 -- AI Lead Scoring
+    # TODO Step 11: Module 8 -- Deduplication & Quality Filtering
+    # TODO Step 12: Module 9 -- Output Formatting & CRM Export
 
 
 def main() -> None:
