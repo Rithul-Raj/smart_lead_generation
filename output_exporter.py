@@ -9,7 +9,6 @@ Folder structure
     current/
         current_leads.csv       -- this run's results (CSV)
         current_leads.json      -- this run's results (JSON)
-        current_leads_live.csv  -- live scraping buffer (Module 3)
     master/
         master_leads.csv        -- all-time accumulated data (CSV)
         master_leads.json       -- all-time accumulated data (JSON)
@@ -37,7 +36,6 @@ CURRENT_CSV     = os.path.join(CURRENT_DIR, "current_leads.csv")
 CURRENT_JSON    = os.path.join(CURRENT_DIR, "current_leads.json")
 MASTER_CSV      = os.path.join(MASTER_DIR,  "master_leads.csv")
 MASTER_JSON     = os.path.join(MASTER_DIR,  "master_leads.json")
-LIVE_BUFFER_CSV = os.path.join(CURRENT_DIR, "current_leads_live.csv")
 
 
 # ── internal helpers ────────────────────────────────────────────────────────
@@ -71,9 +69,11 @@ def _flatten_for_csv(row: dict) -> dict:
     flat = {}
     for k, v in row.items():
         if isinstance(v, list):
-            flat[k] = "|".join(str(item) for item in v) if v else ""
+            flat[k] = "|".join(str(item).replace("\n", " ").replace("\r", "") for item in v) if v else ""
         elif isinstance(v, dict):
-            flat[k] = str(v)   # rare edge case — stringify nested dicts
+            flat[k] = str(v).replace("\n", " ").replace("\r", "")   # rare edge case — stringify nested dicts
+        elif isinstance(v, str):
+            flat[k] = v.replace("\n", " ").replace("\r", "")
         else:
             flat[k] = v
     return flat
@@ -210,32 +210,6 @@ def merge_current_to_master() -> int:
       
     print(f"     JSON: {MASTER_JSON}")
     return new_count
-
-
-def append_row_to_csv(row: dict, filepath: str = LIVE_BUFFER_CSV) -> None:
-    """
-    Appends ONE row to a CSV file immediately after it's scraped.
-    Used by Module 3 for incremental live-saving so data isn't lost
-    if the script crashes mid-run.
-
-    Creates the file (with header) if it doesn't exist yet.
-
-    Args:
-        row     : plain dict — one lead's data.
-        filepath: destination CSV path (defaults to the live scraping buffer).
-    """
-    row = dict(row)
-    row.pop("raw", None)
-    row = _flatten_for_csv(row)   # convert any list fields to pipe-separated strings
-
-    _ensure_output_dir()
-    file_exists = os.path.isfile(filepath)
-
-    with open(filepath, mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=row.keys())
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row)
 
 
 # ── legacy shims (kept so old standalone test runs still work) ───────────────

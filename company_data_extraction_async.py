@@ -79,7 +79,6 @@ class AsyncCompanyDataExtractor:
         concurrency: int = 3,
         page_timeout_ms: int = 12000,
         retries: int = 1,
-        output_csv_path: str = LIVE_BUFFER_CSV,  # output/current/current_leads_live.csv
     ):
         """
         Args:
@@ -87,15 +86,11 @@ class AsyncCompanyDataExtractor:
             concurrency: how many workers (browser tabs) run at once.
             page_timeout_ms: max time to wait for a page to respond (12s).
             retries: how many times to retry a company before giving up.
-            output_csv_path: where results are saved incrementally, one
-                              row at a time, as they're scraped.
         """
         self.headless = headless
         self.concurrency = concurrency
         self.page_timeout_ms = page_timeout_ms
         self.retries = retries
-        self.output_csv_path = output_csv_path
-        self._csv_lock = asyncio.Lock()  # prevents two workers writing at once
 
     def enrich(self, companies: Union[List[dict], str]) -> List[EnrichedCompany]:
         """Public entry point - wraps the async logic so you can call it normally."""
@@ -104,12 +99,9 @@ class AsyncCompanyDataExtractor:
     # ---------------- internal async logic ----------------
 
     async def _enrich_async(self, companies: Union[List[dict], str]) -> List[EnrichedCompany]:
-        from output_exporter import append_row_to_csv  # local import avoids circular import
-
         companies = self._load_input(companies)
         logger.info(
-            f"Enriching {len(companies)} companies "
-            f"({self.concurrency} workers, saving progress to {self.output_csv_path})"
+            f"Enriching {len(companies)} companies ({self.concurrency} workers)"
         )
 
         # A queue holds (index, company) pairs. Each worker pulls the next
@@ -125,10 +117,6 @@ class AsyncCompanyDataExtractor:
             browser = await p.chromium.launch(headless=self.headless)
 
             async def worker(worker_id: int):
-                # ONE context per worker, reused for every company that
-                # worker processes - this is the "reuse browser contexts"
-                # optimization. Much less overhead than a fresh context
-                # (and fresh cookies/cache setup) per company.
                 context = await browser.new_context()
                 page = await context.new_page()
                 try:
@@ -140,10 +128,6 @@ class AsyncCompanyDataExtractor:
 
                         enriched = await self._extract_with_retry(context, page, company)
                         results[index] = enriched
-
-                        async with self._csv_lock:
-                            append_row_to_csv(asdict(enriched), self.output_csv_path)
-
                         queue.task_done()
                 finally:
                     await context.close()
