@@ -36,11 +36,15 @@ Pipeline flow
           syntax -> disposable domain -> DNS resolution -> MX records.
           Outputs verified_emails, risky_emails, invalid_emails, best_email.
 
-  Step 10 Save current results
+  Step 10 Module 7 -- AI Lead Scoring
+          Calculates lead_score (0-100) and lead_tier (Hot/Warm/Cold) based
+          on data completeness, reachability, and qualification.
+
+  Step 11 Save current results
           output/current/current_leads.csv  <- this run's results
           output/current/current_leads.json <- this run's results
 
-  Step 11 Merge current into master (immediately, every run)
+  Step 12 Merge current into master (immediately, every run)
           output/master/master_leads.csv    <- all-time accumulated data
           output/master/master_leads.json   <- all-time accumulated data
           Master is ALWAYS up to date after every run.
@@ -62,6 +66,7 @@ from company_data_extraction_async import AsyncCompanyDataExtractor
 from contact_discovery import ContactDiscovery
 from lead_data_enrichment import LeadDataEnricher
 from email_verification import EmailVerifier
+from ai_lead_scoring import AILeadScorer
 from output_exporter import (
     save_current_output,
     merge_current_to_master,
@@ -184,13 +189,26 @@ def run_pipeline(params: dict) -> None:
     logger.info(f"Step 9 [OK]  Email verification done for {len(email_verified)} companies.")
     print()
 
-    # ── Step 10: Save current output ────────────────────────────────────────
-    logger.info("Step 10 - Saving current output files ...")
-    save_current_output(email_verified, search_params=params)
+    # ── Step 10: AI Lead Scoring ────────────────────────────────────────────
+    logger.info("Step 10 - Module 7: AI Lead Scoring starting ...")
+    scorer = AILeadScorer()
+
+    scored_dicts_m7 = [
+        {k: v for k, v in asdict(c).items() if k != "raw"}
+        for c in email_verified
+    ]
+    leads_scored = scorer.score_leads(scored_dicts_m7)
+
+    logger.info(f"Step 10 [OK] AI Lead Scoring done for {len(leads_scored)} companies.")
     print()
 
-    # ── Step 11: Merge current into master IMMEDIATELY ──────────────────────
-    logger.info("Step 11 - Merging current leads into master ...")
+    # ── Step 11: Save current output ────────────────────────────────────────
+    logger.info("Step 11 - Saving current output files ...")
+    save_current_output(leads_scored, search_params=params)
+    print()
+
+    # ── Step 12: Merge current into master IMMEDIATELY ──────────────────────
+    logger.info("Step 12 - Merging current leads into master ...")
     merge_current_to_master()
     print()
 
@@ -210,6 +228,10 @@ def run_pipeline(params: dict) -> None:
     total_verified_emails = sum(len(c.verified_emails) for c in email_verified if c)
     total_risky_emails    = sum(len(c.risky_emails) for c in email_verified if c)
     total_invalid_emails  = sum(len(c.invalid_emails) for c in email_verified if c)
+    
+    hot_leads  = sum(1 for c in leads_scored if c.lead_tier == "Hot")
+    warm_leads = sum(1 for c in leads_scored if c.lead_tier == "Warm")
+    cold_leads = sum(1 for c in leads_scored if c.lead_tier == "Cold")
 
     # ── Summary ───────────────────────────────────────────────────────────────
     print("=" * 60)
@@ -223,6 +245,7 @@ def run_pipeline(params: dict) -> None:
     print(f"  Emails verified (valid) : {total_verified_emails}")
     print(f"  Emails risky (role/gen) : {total_risky_emails}")
     print(f"  Emails invalid          : {total_invalid_emails}")
+    print(f"  Lead Tiers              : Hot: {hot_leads} | Warm: {warm_leads} | Cold: {cold_leads}")
     print()
     print("  Output files:")
     print("  * output/current/current_leads.csv   <- this run's results")
@@ -232,7 +255,6 @@ def run_pipeline(params: dict) -> None:
     print("=" * 60)
 
     # ── Future modules placeholders ───────────────────────────────────────────
-    # TODO Step 12: Module 7 -- AI Lead Scoring
     # TODO Step 13: Module 8 -- Deduplication & Quality Filtering
     # TODO Step 14: Module 9 -- Output Formatting & CRM Export
 
