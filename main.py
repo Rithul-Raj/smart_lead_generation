@@ -31,11 +31,16 @@ Pipeline flow
           company_size_range, year_founded, headquarters, company_description,
           technologies_used, enrichment_source, data_completeness_score.
 
-  Step 7  Save current results
+  Step 9  Module 6 -- Email Verification
+          Verifies every email address via 4-tier checks:
+          syntax -> disposable domain -> DNS resolution -> MX records.
+          Outputs verified_emails, risky_emails, invalid_emails, best_email.
+
+  Step 10 Save current results
           output/current/current_leads.csv  <- this run's results
           output/current/current_leads.json <- this run's results
 
-  Step 8  Merge current into master (immediately, every run)
+  Step 11 Merge current into master (immediately, every run)
           output/master/master_leads.csv    <- all-time accumulated data
           output/master/master_leads.json   <- all-time accumulated data
           Master is ALWAYS up to date after every run.
@@ -56,6 +61,7 @@ from business_search_engine_playwright import BusinessSearchEnginePlaywright
 from company_data_extraction_async import AsyncCompanyDataExtractor
 from contact_discovery import ContactDiscovery
 from lead_data_enrichment import LeadDataEnricher
+from email_verification import EmailVerifier
 from output_exporter import (
     save_current_output,
     merge_current_to_master,
@@ -164,13 +170,27 @@ def run_pipeline(params: dict) -> None:
     logger.info(f"Step 6 [OK]  Lead enrichment done for {len(lead_enriched)} companies.")
     print()
 
-    # ── Step 7: Save current output ──────────────────────────────────────────
-    logger.info("Step 7 - Saving current output files ...")
-    save_current_output(lead_enriched, search_params=params)
+    # ── Step 9: Email Verification ──────────────────────────────────────────
+    logger.info("Step 9 - Module 6: Email Verification starting ...")
+    verifier = EmailVerifier()
+
+    # Convert Module 5's dataclass objects to plain dicts for Module 6
+    enriched_dicts_m6 = [
+        {k: v for k, v in asdict(c).items() if k != "raw"}
+        for c in lead_enriched
+    ]
+    email_verified = verifier.verify(enriched_dicts_m6)
+
+    logger.info(f"Step 9 [OK]  Email verification done for {len(email_verified)} companies.")
     print()
 
-    # ── Step 8: Merge current into master IMMEDIATELY ────────────────────────
-    logger.info("Step 8 - Merging current leads into master ...")
+    # ── Step 10: Save current output ────────────────────────────────────────
+    logger.info("Step 10 - Saving current output files ...")
+    save_current_output(email_verified, search_params=params)
+    print()
+
+    # ── Step 11: Merge current into master IMMEDIATELY ──────────────────────
+    logger.info("Step 11 - Merging current leads into master ...")
     merge_current_to_master()
     print()
 
@@ -187,16 +207,22 @@ def run_pipeline(params: dict) -> None:
         sum(c.data_completeness_score for c in lead_enriched if c)
         / max(len(lead_enriched), 1)
     )
+    total_verified_emails = sum(len(c.verified_emails) for c in email_verified if c)
+    total_risky_emails    = sum(len(c.risky_emails) for c in email_verified if c)
+    total_invalid_emails  = sum(len(c.invalid_emails) for c in email_verified if c)
 
     # ── Summary ───────────────────────────────────────────────────────────────
     print("=" * 60)
     print(f"  [DONE]  Pipeline complete!")
     print(f"  -----------------------------------------")
-    print(f"  Candidates found      : {len(candidates)}")
-    print(f"  Companies enriched    : {len(enriched)}")
-    print(f"  Contacts found        : {contacts_found}/{len(contact_enriched)}")
-    print(f"  Lead data enriched    : {enriched_count}/{len(lead_enriched)}")
-    print(f"  Avg completeness score: {avg_completeness:.0%}")
+    print(f"  Candidates found        : {len(candidates)}")
+    print(f"  Companies enriched      : {len(enriched)}")
+    print(f"  Contacts found          : {contacts_found}/{len(contact_enriched)}")
+    print(f"  Lead data enriched      : {enriched_count}/{len(lead_enriched)}")
+    print(f"  Avg completeness score  : {avg_completeness:.0%}")
+    print(f"  Emails verified (valid) : {total_verified_emails}")
+    print(f"  Emails risky (role/gen) : {total_risky_emails}")
+    print(f"  Emails invalid          : {total_invalid_emails}")
     print()
     print("  Output files:")
     print("  * output/current/current_leads.csv   <- this run's results")
@@ -206,10 +232,9 @@ def run_pipeline(params: dict) -> None:
     print("=" * 60)
 
     # ── Future modules placeholders ───────────────────────────────────────────
-    # TODO Step 9:  Module 6 -- Email Verification
-    # TODO Step 10: Module 7 -- AI Lead Scoring
-    # TODO Step 11: Module 8 -- Deduplication & Quality Filtering
-    # TODO Step 12: Module 9 -- Output Formatting & CRM Export
+    # TODO Step 12: Module 7 -- AI Lead Scoring
+    # TODO Step 13: Module 8 -- Deduplication & Quality Filtering
+    # TODO Step 14: Module 9 -- Output Formatting & CRM Export
 
 
 def main() -> None:
