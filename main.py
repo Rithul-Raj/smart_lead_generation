@@ -44,13 +44,18 @@ Pipeline flow
           Drops unqualified leads (Cold tier, no contact points, invalid emails)
           and deduplicates intra-run by website, LinkedIn, and phone.
 
-  Step 12 Save current results
-          output/current/current_leads.csv  <- this run's results
-          output/current/current_leads.json <- this run's results
+  Step 12 Module 9 -- Output Formatting & CRM Export
+          Renames internal fields to human-readable column headers,
+          drops pipeline-only fields, and formats lists as comma-separated
+          strings — producing CRM-ready rows (HubSpot / Salesforce / Zoho).
 
-  Step 13 Merge current into master (immediately, every run)
-          output/master/master_leads.csv    <- all-time accumulated data
-          output/master/master_leads.json   <- all-time accumulated data
+  Step 13 Save current results
+          output/current/current_leads.csv  <- this run's results (CRM-ready)
+          output/current/current_leads.json <- this run's results (JSON)
+
+  Step 14 Merge current into master (immediately, every run)
+          output/master/master_leads.csv    <- all-time accumulated data (CRM-ready)
+          output/master/master_leads.json   <- all-time accumulated data (JSON)
           Master is ALWAYS up to date after every run.
 
 Adding future modules
@@ -72,6 +77,7 @@ from lead_data_enrichment import LeadDataEnricher
 from email_verification import EmailVerifier
 from ai_lead_scoring import AILeadScorer
 from lead_filtering import LeadFilter
+from crm_exporter import CRMExporter
 from output_exporter import (
     save_current_output,
     merge_current_to_master,
@@ -215,13 +221,21 @@ def run_pipeline(params: dict) -> None:
     logger.info(f"Step 11 [OK] Filtering done. {len(leads_filtered)} leads passed quality checks.")
     print()
 
-    # ── Step 12: Save current output ────────────────────────────────────────
-    logger.info("Step 12 - Saving current output files ...")
-    save_current_output(leads_filtered, search_params=params)
+    # ── Step 12: CRM Output Formatting ─────────────────────────────────────────
+    logger.info("Step 12 - Module 9: CRM Output Formatting ...")
+    crm_exporter = CRMExporter()
+    crm_leads = crm_exporter.format(leads_filtered)
+
+    logger.info(f"Step 12 [OK] CRM formatting done. {len(crm_leads)} records ready.")
     print()
 
-    # ── Step 13: Merge current into master IMMEDIATELY ──────────────────────
-    logger.info("Step 13 - Merging current leads into master ...")
+    # ── Step 13: Save current output ────────────────────────────────────────
+    logger.info("Step 13 - Saving current output files ...")
+    save_current_output(crm_leads, search_params=params)
+    print()
+
+    # ── Step 14: Merge current into master IMMEDIATELY ──────────────────────
+    logger.info("Step 14 - Merging current leads into master ...")
     merge_current_to_master()
     print()
 
@@ -262,15 +276,12 @@ def run_pipeline(params: dict) -> None:
     print(f"  Leads filtered/dropped  : {dropped} (unqualified/dupes)")
     print(f"  Final Qualified Tiers   : Hot: {hot_leads} | Warm: {warm_leads} | Cold: {cold_leads}")
     print()
-    print("  Output files:")
+    print("  Output files (CRM-ready):")
     print("  * output/current/current_leads.csv   <- this run's results")
     print("  * output/current/current_leads.json  <- this run's results (JSON)")
     print("  * output/master/master_leads.csv     <- all-time accumulated data")
     print("  * output/master/master_leads.json    <- all-time accumulated data (JSON)")
     print("=" * 60)
-
-    # ── Future modules placeholders ───────────────────────────────────────────
-    # TODO Step 14: Module 9 -- Output Formatting & CRM Export
 
 
 def main() -> None:
