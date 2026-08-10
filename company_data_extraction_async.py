@@ -41,6 +41,7 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Union, Optional
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
+from output_exporter import LIVE_BUFFER_CSV   # single source of truth for the live buffer path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("company_data_extraction_async")
@@ -77,7 +78,7 @@ class AsyncCompanyDataExtractor:
         concurrency: int = 3,
         page_timeout_ms: int = 12000,
         retries: int = 1,
-        output_csv_path: str = "output/enriched_companies_live.csv",
+        output_csv_path: str = LIVE_BUFFER_CSV,  # output/current/current_leads_live.csv
     ):
         """
         Args:
@@ -322,28 +323,29 @@ class AsyncCompanyDataExtractor:
             return None, None
 
 
-# ---------------- Standalone test run ----------------
+# ── How to run this module ────────────────────────────────────────────────────
+#
+# This module is now called from the central pipeline entry point:
+#
+#     python main.py
+#
+# main.py opens the GUI input form so you can fill in your search parameters
+# (number of leads, location, industry) without editing any code.
+#
+# Enrichment progress is saved incrementally to:
+#     output/current_leads_live.csv
+# and the final result is written to:
+#     output/current_leads.csv + output/current_leads.json
+# by the pipeline in main.py.
+#
+# If you need to test this module in isolation, you can still do:
+#
+#     from company_data_extraction_async import AsyncCompanyDataExtractor
+#     extractor = AsyncCompanyDataExtractor(headless=True, concurrency=3)
+#     enriched  = extractor.enrich("output/current_leads.json")
+#     print(enriched)
+#
+# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    from output_exporter import export_to_csv, export_to_json
-
-    extractor = AsyncCompanyDataExtractor(headless=True, concurrency=3)
-
-    # Real pipeline use: feed Module 2's exported JSON directly - this now
-    # includes maps_url, so Module 3 will skip re-searching entirely.
-    # enriched = extractor.enrich("output/leads_20260101_120000.json")
-
-    # Quick manual test (no maps_url, so it falls back to searching):
-    
-    enriched = extractor.enrich("output/leads_20260807_122103.json")
-
-
-    print(f"\n{len(enriched)} companies enriched:\n")
-    for c in enriched:
-        print({k: v for k, v in asdict(c).items() if k != "raw"})
-
-    # Note: results are ALSO already saved incrementally during the run
-    # to output/enriched_companies_live.csv - these two lines just save a
-    # final complete CSV/JSON pair too, for convenience.
-    if enriched:
-        export_to_csv(enriched, filename="enriched_companies_final.csv")
-        export_to_json(enriched, filename="enriched_companies_final.json")
+    print("Run 'python main.py' to launch the full pipeline with the GUI input form.")
+    print("See the comment block above for how to test this module in isolation.")
