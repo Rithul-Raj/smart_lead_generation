@@ -128,13 +128,25 @@ def _load_json_rows(filepath: str) -> List[dict]:
 def _dedup_key(row: dict) -> str:
     """
     Deduplication key for master merging.
-    Uses company_name + address (lower-cased, stripped).
-    If place_id is present, prefer that (more reliable).
+
+    Supports BOTH field-name formats:
+      - Old internal format : company_name, address, place_id
+      - New CRM format      : Company Name, Full Address
     """
+    # place_id check (legacy internal format only)
     if row.get("place_id"):
         return str(row["place_id"]).strip().lower()
-    name = str(row.get("company_name") or "").strip().lower()
-    addr = str(row.get("address") or "").strip().lower()
+
+    # Company name — try CRM format first, then internal
+    name = str(
+        row.get("Company Name") or row.get("company_name") or ""
+    ).strip().lower()
+
+    # Address — try CRM format first, then internal
+    addr = str(
+        row.get("Full Address") or row.get("address") or ""
+    ).strip().lower()
+
     return f"{name}|{addr}"
 
 
