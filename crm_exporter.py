@@ -6,23 +6,26 @@ Smart Lead Generation AI Model | Detagenix Internship Project
 What this module does
 ----------------------
 Takes the final qualified leads from Module 8 (ScoredLeadCompany objects)
-and transforms them into clean, CRM-ready dictionaries before they are saved
-to output/current/ and output/master/.
+and transforms them into clean, minimal, CRM-ready dictionaries before
+they are saved to output/current/ and output/master/.
 
 Transformations applied:
-  1. Column ordering       — Most important fields come first (Lead Tier,
-                             Score, Best Email, Phone — then company details).
-  2. Column renaming       — Snake_case field names become human-readable
-                             column headers usable in HubSpot / Salesforce.
-  3. Internal field drops  — Pipeline-only fields (raw, source, pages_crawled,
-                             enrichment_source, data_completeness_score, etc.)
-                             are stripped — they don't belong in a sales sheet.
-  4. List formatting       — Technologies, verified emails, etc. are joined
-                             as comma-separated strings for spreadsheet use.
-  5. Empty-value cleanup   — None / empty-list values become empty strings.
+  1. Column ordering       — Priority → Score → Email → Phone → Company details.
+  2. Column renaming       — Snake_case → human-readable headers.
+  3. Internal field drops  — All pipeline-only fields stripped (raw, source,
+                             pages_crawled, tech stack, social URLs, website
+                             title/description, email verification internals, etc.)
+  4. Smart email column    — Single "Email" column: uses best_email if present,
+                             falls back to verified_emails, then risky_emails.
+                             No extra email columns clutter the sheet.
+  5. List formatting       — Phone lists joined as comma-separated strings.
+  6. Empty-value cleanup   — None / empty values become empty strings.
 
-Output: plain dicts consumed directly by save_current_output() in output_exporter.py.
-The existing current_leads.csv / master_leads.csv ARE the CRM export — no extra files.
+Final CRM columns (in order):
+  Priority | Lead Score | Email | Phone | Additional Phones |
+  Company Name | Business Category | Industry | Location |
+  Full Address | Website | Company Size | Year Founded |
+  Headquarters | Company Description | Google Rating
 """
 
 from typing import List, Dict, Any
@@ -30,52 +33,34 @@ import logging
 
 logger = logging.getLogger("crm_exporter")
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CRM column order + human-readable header names
-# Ordered: prioritisation signals → contact info → company details → social
+# "Email" is handled separately via smart fallback logic (see _format_one)
 # ─────────────────────────────────────────────────────────────────────────────
 _CRM_FIELD_MAP = [
-    # ── Lead qualification signals ─────────────────────────────────────────
-    ("priority",               "Priority"),           # High / Medium / Low
-    ("lead_score",             "Lead Score"),          # 0–100
-    # ── Best contact point ─────────────────────────────────────────────────
-    ("best_email",             "Best Email"),          # top verified/risky email
-    ("verified_emails",        "Verified Emails"),     # personal emails (valid)
-    ("risky_emails",           "Role Emails"),         # info@, sales@, etc.
-    ("phone",                  "Phone (Google Maps)"), # Maps-listed phone
-    ("phones_discovered",      "Phones Discovered"),   # extra phones from site
-    # ── Core company identity ──────────────────────────────────────────────
-    ("company_name",           "Company Name"),
-    ("category",               "Business Category"),
-    ("industry",               "Industry"),
-    ("location",               "Search Location"),
-    ("address",                "Full Address"),
-    ("website",                "Website"),
+    # ── Qualification ──────────────────────────────────────────────────────
+    ("priority",            "Priority"),           # High / Medium / Low
+    ("lead_score",          "Lead Score"),          # 0–100
+    # ── Contact — EMAIL handled separately below ────────────────────────────
+    # ── Contact — Phone ────────────────────────────────────────────────────
+    ("phone",               "Phone"),              # Maps-listed phone
+    ("phones_discovered",   "Additional Phones"),  # crawled from website
+    # ── Company identity ───────────────────────────────────────────────────
+    ("company_name",        "Company Name"),
+    ("category",            "Business Category"),
+    ("industry",            "Industry"),
+    ("location",            "Search Location"),
+    ("address",             "Full Address"),
+    ("website",             "Website"),
     # ── Company profile ────────────────────────────────────────────────────
-    ("company_size_range",     "Company Size"),
-    ("year_founded",           "Year Founded"),
-    ("headquarters",           "Headquarters"),
-    ("company_description",    "Company Description"),
-    ("technologies_used",      "Tech Stack"),
-    # ── Reputation signals ─────────────────────────────────────────────────
-    ("rating",                 "Google Rating"),
-    ("review_count",           "Review Count"),
-    # ── Social / digital presence ──────────────────────────────────────────
-    ("linkedin_url",           "LinkedIn"),
-    ("twitter_url",            "Twitter / X"),
-    ("facebook_url",           "Facebook"),
-    ("instagram_url",          "Instagram"),
-    ("youtube_url",            "YouTube"),
-    # ── Email verification summary ─────────────────────────────────────────
-    ("email_verification_notes", "Email Verification Status"),
-    ("primary_email_status",   "Primary Email Status"),
-    # ── Website content snippets (useful for personalization) ──────────────
-    ("website_title",          "Website Title"),
-    ("website_description",    "Website Meta Description"),
+    ("company_size_range",  "Company Size"),
+    ("year_founded",        "Year Founded"),
+    ("headquarters",        "Headquarters"),
+    ("company_description", "Company Description"),
+    # ── Reputation ─────────────────────────────────────────────────────────
+    ("rating",              "Google Rating"),
 ]
-
-# Keys of all fields in _CRM_FIELD_MAP (for fast lookup)
-_CRM_KEYS = {internal for internal, _ in _CRM_FIELD_MAP}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -86,8 +71,7 @@ class CRMExporter:
     """
     Module 9 — Output Formatting & CRM Export.
 
-    Converts ScoredLeadCompany dicts into clean, ordered, human-readable
-    dicts ready for CRM import (HubSpot / Salesforce / Zoho / etc.).
+    Produces minimal, clean records directly importable into any CRM.
     """
 
     def format(self, leads: List[Any]) -> List[Dict[str, Any]]:
@@ -105,12 +89,12 @@ class CRMExporter:
             row = lead if isinstance(lead, dict) else self._to_dict(lead)
             crm_records.append(self._format_one(row))
 
-        hot   = sum(1 for r in crm_records if r.get("Priority") == "High")
-        warm  = sum(1 for r in crm_records if r.get("Priority") == "Medium")
-        cold  = sum(1 for r in crm_records if r.get("Priority") == "Low")
+        high   = sum(1 for r in crm_records if r.get("Priority") == "High")
+        medium = sum(1 for r in crm_records if r.get("Priority") == "Medium")
+        low    = sum(1 for r in crm_records if r.get("Priority") == "Low")
         logger.info(
             f"CRM Export formatted {len(crm_records)} leads — "
-            f"High: {hot} | Medium: {warm} | Low: {cold}"
+            f"High: {high} | Medium: {medium} | Low: {low}"
         )
         return crm_records
 
@@ -130,12 +114,12 @@ class CRMExporter:
     @staticmethod
     def _format_value(value) -> str:
         """
-        Render any Python value into a clean string for CSV/JSON output.
-          - list  → comma-separated (e.g. "React, AWS, Bootstrap")
-          - None  → ""
-          - bool  → "Yes" / "No"
-          - float → rounded to 2 dp
-          - other → str()
+        Render any Python value into a clean string.
+          list  → comma-separated  e.g. "+91 98765, +1 405 638"
+          None  → ""
+          bool  → "Yes" / "No"
+          float → no trailing .0 unless meaningful decimal
+          other → str()
         """
         if value is None:
             return ""
@@ -148,19 +132,52 @@ class CRMExporter:
             return f"{value:.2f}" if value != int(value) else str(int(value))
         return str(value).strip()
 
+    def _resolve_email(self, row: Dict[str, Any]) -> str:
+        """
+        Smart email resolution — single value for the 'Email' column.
+
+        Priority order:
+          1. best_email   (set by Module 6 — already the top pick)
+          2. verified_emails[0]  (personal addresses that passed MX check)
+          3. risky_emails[0]     (role/generic but domain is alive)
+          4. primary_email       (raw Module 4 pick, unverified)
+          5. ""                  (nothing found)
+        """
+        best = (row.get("best_email") or "").strip()
+        if best:
+            return best
+
+        verified = [e for e in (row.get("verified_emails") or []) if e]
+        if verified:
+            return verified[0]
+
+        risky = [e for e in (row.get("risky_emails") or []) if e]
+        if risky:
+            return risky[0]
+
+        primary = (row.get("primary_email") or "").strip()
+        return primary
+
     def _format_one(self, row: Dict[str, Any]) -> Dict[str, Any]:
         """Transform a single raw lead dict into a CRM-ready ordered dict."""
         crm: Dict[str, Any] = {}
 
+        # First two columns: Priority + Lead Score
+        crm["Priority"]   = self._format_value(row.get("priority"))
+        crm["Lead Score"] = self._format_value(row.get("lead_score"))
+
+        # Smart single Email column — inserted right after Lead Score
+        crm["Email"] = self._resolve_email(row)
+
+        # Rest of columns from the field map (phone, company details, etc.)
         for internal_key, crm_header in _CRM_FIELD_MAP:
-            raw_val = row.get(internal_key)
-            crm[crm_header] = self._format_value(raw_val)
+            if crm_header in ("Priority", "Lead Score"):
+                continue   # already written above
+            crm[crm_header] = self._format_value(row.get(internal_key))
 
         return crm
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Standalone test
 # ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("Run 'python main.py' to launch the full pipeline.")
