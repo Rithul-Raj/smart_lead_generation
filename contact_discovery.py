@@ -469,7 +469,7 @@ class ContactDiscovery:
         phones = list({
             m.strip()
             for m in _PHONE_RE.findall(text)
-            if len(re.sub(r"\D", "", m)) >= 7   # at least 7 digits
+            if len(re.sub(r"\D", "", m)) >= 10   # at least 10 digits (Indian number minimum)
         })
 
         return emails, phones
@@ -481,14 +481,17 @@ class ContactDiscovery:
         """
         soup = BeautifulSoup(html, "html.parser")
         for tag in soup.find_all("a", href=True):
-            href = tag["href"]
+            href = tag["href"].strip()   # strip leading/trailing whitespace and newlines
+            if not href:
+                continue
             for key, pattern in _SOCIAL_PATTERNS.items():
                 if social_links[key] is None and pattern.search(href):
                     # Normalise: make sure it's an absolute URL
                     if href.startswith("http"):
                         social_links[key] = href
-                    else:
-                        social_links[key] = f"https:{href}" if href.startswith("//") else href
+                    elif href.startswith("//"):
+                        social_links[key] = f"https:{href}"
+                    # Relative or malformed hrefs are skipped
 
     def _is_contact_url(self, url: str) -> bool:
         """Returns True if the URL path looks like a contact/about page."""
@@ -542,26 +545,55 @@ class ContactDiscovery:
         maps_phone: Optional[str],
     ) -> List[str]:
         """
-        Deduplicate phone numbers discovered from the website.
-        Normalises by stripping non-digits for comparison, but keeps
-        the original formatted string in output.
-        Excludes the Google Maps phone (already in the 'phone' field).
+        Validate, deduplicate, and clean phone numbers found on the website.
+
+        Validation rules (Indian lead generation context):
+          1. Must have at least 10 digits.
+          2. Must not exceed 13 digits (rules out ISBN-like numbers, IDs, etc.).
+          3. If a country code is present (+XX), only +91 (India) is accepted.
+             Numbers with +1, +81, +66 etc. are foreign and discarded.
+          4. The core 10-digit part must start with 6-9 (Indian mobile/local)
+             OR the number starts with 0 / 91 (STD / ISD prefix).
+          5. Excludes any number whose digits already appear in the Google Maps
+             phone field (which is already stored in the 'phone' field).
         """
         seen_digits: set  = set()
         cleaned:     List[str] = []
 
-        # Add the Maps phone's digit signature to seen so we don't duplicate it
+        # Seed seen-set with the Maps phone so we don't duplicate it
         if maps_phone:
             seen_digits.add(re.sub(r"\D", "", maps_phone))
 
         for p in raw_phones:
+            p = p.strip()
             digits = re.sub(r"\D", "", p)
-            # Ignore very short strings (dates, zip codes, etc.)
-            if len(digits) < 7:
+
+            # Rule 1 & 2: digit count must be 10-13
+            if not (10 <= len(digits) <= 13):
                 continue
+
+            # Rule 3: reject non-Indian country codes
+            # If the string starts with +, extract and check the country code.
+            if p.startswith("+"):
+                cc_match = re.match(r"^\+(\d{1,3})", p)
+                if cc_match:
+                    cc = cc_match.group(1)
+                    if cc != "91":          # not India — skip
+                        continue
+
+            # Rule 4: core 10 digits must start with 6-9, OR number has 0/91 prefix
+            core = digits[-10:]             # last 10 digits = the local number
+            has_valid_prefix = (
+                digits.startswith("91")     # ISD prefix 91XXXXXXXXXX
+                or digits.startswith("0")   # STD prefix 0XXXXXXXXXXX
+            )
+            if not re.match(r"^[6-9]", core) and not has_valid_prefix:
+                continue
+
+            # Dedup by digit signature
             if digits not in seen_digits:
                 seen_digits.add(digits)
-                cleaned.append(p.strip())
+                cleaned.append(p)
 
         return cleaned
 
