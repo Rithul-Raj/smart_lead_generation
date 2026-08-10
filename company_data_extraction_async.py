@@ -35,6 +35,7 @@ Setup:
 """
 
 import json
+import re
 import asyncio
 import logging
 from dataclasses import dataclass, field, asdict
@@ -242,43 +243,66 @@ class AsyncCompanyDataExtractor:
 
     async def _get_category_and_rating(self, page):
         """
-        Reads the business category (e.g. 'Software company') and the
-        rating/review count, which sit near the top of the detail panel.
+        Reads the business category, star rating, and review count from the
+        Google Maps detail panel.
 
-        NOTE: these selectors are the most fragile of the bunch since
-        Google doesn't label them as clearly as phone/website. If category
-        or rating come back empty, that's the first place to check with
-        Inspect Element and update.
+        Google Maps changes its HTML frequently, so we use multiple fallback
+        strategies for each field rather than relying on a single selector.
         """
-        category = None
-        rating = None
+        category     = None
+        rating       = None
         review_count = None
 
+        # ── Category ─────────────────────────────────────────────────────────
         category_el = await page.query_selector('button[jsaction*="category"]')
         if category_el:
             category = (await category_el.inner_text()).strip()
 
+        # ── Rating ───────────────────────────────────────────────────────────
+        # aria-label looks like "4.2 stars" — validate it's actually a number
+        # to avoid matching elements that just say "stars" with no number.
         rating_el = await page.query_selector('span[aria-label*="stars"]')
         if rating_el:
             label = await rating_el.get_attribute("aria-label") or ""
-            # aria-label looks like "4.2 stars"
-            parts = label.split()
-            if parts:
-                rating = parts[0]
+            match = re.match(r'^(\d+\.?\d*)\s+stars?', label.strip(), re.I)
+            if match:
+                rating = match.group(1)
 
-        # Review count lives in its OWN element, separate from the rating,
-        # e.g. <span role="img" aria-label="2,014 reviews">(2,014)</span>
-        # NOTE: Google Maps also has a "Write a review" button whose label
-        # also contains the word "review" but no numbers - so we check ALL
-        # matches and use the first one that actually has digits in it,
-        # instead of blindly trusting the first match found.
+        # ── Review count — 3-tier fallback ───────────────────────────────────
+        #
+        # Tier 1: span[aria-label*="review"] — the classic selector.
+        #   Google Maps wraps the count in a span like:
+        #   <span aria-label="2,014 reviews">
         review_els = await page.query_selector_all('span[aria-label*="review"]')
-        for review_el in review_els:
-            label = await review_el.get_attribute("aria-label") or ""
-            digits = "".join(ch for ch in label if ch.isdigit())
-            if digits:
-                review_count = digits
+        for el in review_els:
+            label = await el.get_attribute("aria-label") or ""
+            m = re.search(r'([\d,]+)\s+review', label, re.I)
+            if m:
+                review_count = m.group(1)   # keep commas e.g. "1,234"
                 break
+
+        # Tier 2: button[aria-label*="review"] — Google sometimes wraps it
+        #   in a clickable button instead of a plain span.
+        if not review_count:
+            btn_els = await page.query_selector_all('button[aria-label*="review"]')
+            for el in btn_els:
+                label = await el.get_attribute("aria-label") or ""
+                m = re.search(r'([\d,]+)\s+review', label, re.I)
+                if m:
+                    review_count = m.group(1)
+                    break
+
+        # Tier 3: scan the full visible page text for the pattern
+        #   "4.3(1,234)" or "4.3 (1,234)" — the count sits in parentheses
+        #   right after the star rating on the Maps panel.
+        if not review_count:
+            try:
+                page_text = await page.inner_text("body")
+                m = re.search(r'\d+\.?\d*\s*\(([\d,]+)\)', page_text)
+                if m:
+                    review_count = m.group(1)
+            except Exception:
+                pass
 
         return category, rating, review_count
 
