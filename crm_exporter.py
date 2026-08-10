@@ -56,7 +56,6 @@ _CRM_FIELD_MAP = [
     # ── Company profile ────────────────────────────────────────────────────
     ("company_size_range",  "Company Size"),
     ("year_founded",        "Year Founded"),
-    ("headquarters",        "Headquarters"),
     ("company_description", "Company Description"),
     # ── Reputation ─────────────────────────────────────────────────────────
     ("rating",              "Google Rating"),
