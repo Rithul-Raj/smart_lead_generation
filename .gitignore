@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment / secrets
+.env
+*.env
+
+# Output data files (generated at runtime — not tracked in git)
+# The folder structure (output/current/, output/master/) IS tracked via .gitkeep
+output/current/*.csv
+output/current/*.json
+output/master/*.csv
+output/master/*.json
+output/*.csv
+output/*.json
+
+# Documentation (internal reference only — not for the repo)
+*.pdf
+*.docx
+
+# OS
+.DS_Store
+Thumbs.db

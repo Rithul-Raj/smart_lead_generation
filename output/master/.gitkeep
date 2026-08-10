@@ -1,0 +1,2 @@
+# This file exists to track the output/master/ folder in git.
+# Actual data files (CSV, JSON) are excluded via .gitignore.
