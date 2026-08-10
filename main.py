@@ -274,7 +274,7 @@ def run_pipeline(params: dict) -> None:
     print(f"  Emails verified (valid) : {total_verified_emails}")
     print(f"  Emails risky (role/gen) : {total_risky_emails}")
     print(f"  Emails invalid          : {total_invalid_emails}")
-    print(f"  Leads filtered/dropped  : {dropped} (Low priority / unqualified / dupes)")
+    print(f"  Duplicate leads removed : {dropped}")
     print(f"  Priority Breakdown      : High: {high_leads} | Medium: {medium_leads} | Low: {low_leads}")
     print()
     print("  Output files (CRM-ready):")
