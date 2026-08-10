@@ -146,7 +146,7 @@ class ContactEnrichedCompany:
     review_count:        Optional[str] = None
     website_title:       Optional[str] = None
     website_description: Optional[str] = None
-    company_size:        Optional[str] = None
+    # company_size intentionally omitted — use company_size_range from Module 5 instead
     source:              str = "google_maps_detail_scrape_async"
 
     # ── NEW fields added by Module 4 ─────────────────────────────────────
@@ -299,7 +299,7 @@ class ContactDiscovery:
             review_count        = company.get("review_count"),
             website_title       = company.get("website_title"),
             website_description = company.get("website_description"),
-            company_size        = company.get("company_size"),
+            # company_size omitted — replaced by company_size_range in Module 5
             source              = company.get("source", "google_maps_detail_scrape_async"),
         )
 

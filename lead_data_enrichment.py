@@ -187,7 +187,7 @@ class EnrichedLeadCompany:
     review_count:          Optional[str] = None
     website_title:         Optional[str] = None
     website_description:   Optional[str] = None
-    company_size:          Optional[str] = None
+    # company_size intentionally omitted — use company_size_range below instead
     source:                str = "google_maps_detail_scrape_async"
     emails:                List[str] = field(default_factory=list)
     primary_email:         Optional[str] = None
@@ -329,7 +329,7 @@ class LeadDataEnricher:
             review_count        = company.get("review_count"),
             website_title       = company.get("website_title"),
             website_description = company.get("website_description"),
-            company_size        = company.get("company_size"),
+            # company_size omitted — replaced by company_size_range (Module 5 field below)
             source              = company.get("source", "google_maps_detail_scrape_async"),
             emails              = company.get("emails") or [],
             primary_email       = company.get("primary_email"),

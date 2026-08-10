@@ -60,12 +60,11 @@ def _rows_from_dataclasses(candidates: List) -> List[dict]:
 
 def _flatten_for_csv(row: dict) -> dict:
     """
-    CSV cells cannot hold Python lists. Convert any list values to a
-    pipe-separated string so they fit in a single cell and remain readable.
-
-    Example:
-        ["info@acme.com", "ceo@acme.com"]  ->  "info@acme.com|ceo@acme.com"
-        []                                 ->  ""  (empty string)
+    CSV cells cannot hold Python lists or dicts. Convert:
+      - list  ->  pipe-separated string  e.g. "React|AWS|Bootstrap"
+      - []    ->  ""  (empty string)
+      - dict  ->  JSON string  (rare, but safe)
+      - everything else stays as-is
 
     JSON output is NOT affected by this — lists stay as proper JSON arrays.
     """
@@ -73,17 +72,34 @@ def _flatten_for_csv(row: dict) -> dict:
     for k, v in row.items():
         if isinstance(v, list):
             flat[k] = "|".join(str(item) for item in v) if v else ""
+        elif isinstance(v, dict):
+            flat[k] = str(v)   # rare edge case — stringify nested dicts
         else:
             flat[k] = v
     return flat
 
 
 def _write_csv(rows: List[dict], filepath: str) -> None:
+    """
+    Write rows to a CSV file.
+
+    Handles mixed schemas: master may contain old rows (fewer fields) and
+    new rows (more fields from later modules). We take the UNION of all
+    keys as the header so every row fits without crashing.
+    Rows missing a field get an empty cell (restval='').
+    """
     if not rows:
         return
     flat_rows = [_flatten_for_csv(r) for r in rows]
+    # Union of all keys, preserving insertion order from the first row
+    all_keys = list(dict.fromkeys(k for row in flat_rows for k in row))
     with open(filepath, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=flat_rows[0].keys())
+        writer = csv.DictWriter(
+            f,
+            fieldnames=all_keys,
+            extrasaction="ignore",  # silently skip any key not in fieldnames
+            restval="",             # fill missing fields with empty string
+        )
         writer.writeheader()
         writer.writerows(flat_rows)
 

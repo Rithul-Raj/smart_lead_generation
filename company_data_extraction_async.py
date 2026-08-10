@@ -62,7 +62,7 @@ class EnrichedCompany:
     review_count: str = None        # NEW - e.g. "1,204"
     website_title: str = None       # NEW - <title> of the company's own website
     website_description: str = None # NEW - meta description of the company's own website
-    company_size: str = None        # still intentionally empty - not reliably available
+    # company_size intentionally omitted — use company_size_range from Module 5 instead
     source: str = "google_maps_detail_scrape_async"
     raw: dict = field(default_factory=dict)
 
