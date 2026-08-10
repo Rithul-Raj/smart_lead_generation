@@ -547,15 +547,14 @@ class ContactDiscovery:
         """
         Validate, deduplicate, and clean phone numbers found on the website.
 
-        Validation rules (Indian lead generation context):
-          1. Must have at least 10 digits.
-          2. Must not exceed 13 digits (rules out ISBN-like numbers, IDs, etc.).
-          3. If a country code is present (+XX), only +91 (India) is accepted.
-             Numbers with +1, +81, +66 etc. are foreign and discarded.
-          4. The core 10-digit part must start with 6-9 (Indian mobile/local)
-             OR the number starts with 0 / 91 (STD / ISD prefix).
-          5. Excludes any number whose digits already appear in the Google Maps
-             phone field (which is already stored in the 'phone' field).
+        Validation rules:
+          1. Must have at least 10 digits — removes short garbage like
+             "101-0032" (6 digits), "6673 7000" (7 digits), zip codes, etc.
+          2. Must not exceed 13 digits — removes barcodes, IDs, etc.
+          3. No country-code restriction: +91 (India), +1 (US), +81 (Japan)
+             etc. are ALL kept — companies may have international offices.
+          4. Excludes any number already in the Google Maps 'phone' field
+             (already stored separately, no need to duplicate it here).
         """
         seen_digits: set  = set()
         cleaned:     List[str] = []
@@ -568,26 +567,8 @@ class ContactDiscovery:
             p = p.strip()
             digits = re.sub(r"\D", "", p)
 
-            # Rule 1 & 2: digit count must be 10-13
+            # Rules 1 & 2: digit count must be 10-13
             if not (10 <= len(digits) <= 13):
-                continue
-
-            # Rule 3: reject non-Indian country codes
-            # If the string starts with +, extract and check the country code.
-            if p.startswith("+"):
-                cc_match = re.match(r"^\+(\d{1,3})", p)
-                if cc_match:
-                    cc = cc_match.group(1)
-                    if cc != "91":          # not India — skip
-                        continue
-
-            # Rule 4: core 10 digits must start with 6-9, OR number has 0/91 prefix
-            core = digits[-10:]             # last 10 digits = the local number
-            has_valid_prefix = (
-                digits.startswith("91")     # ISD prefix 91XXXXXXXXXX
-                or digits.startswith("0")   # STD prefix 0XXXXXXXXXXX
-            )
-            if not re.match(r"^[6-9]", core) and not has_valid_prefix:
                 continue
 
             # Dedup by digit signature
