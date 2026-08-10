@@ -36,7 +36,7 @@ logger = logging.getLogger("crm_exporter")
 # ─────────────────────────────────────────────────────────────────────────────
 _CRM_FIELD_MAP = [
     # ── Lead qualification signals ─────────────────────────────────────────
-    ("lead_tier",              "Lead Tier"),           # Hot / Warm / Cold
+    ("priority",               "Priority"),           # High / Medium / Low
     ("lead_score",             "Lead Score"),          # 0–100
     # ── Best contact point ─────────────────────────────────────────────────
     ("best_email",             "Best Email"),          # top verified/risky email
@@ -105,12 +105,12 @@ class CRMExporter:
             row = lead if isinstance(lead, dict) else self._to_dict(lead)
             crm_records.append(self._format_one(row))
 
-        hot   = sum(1 for r in crm_records if r.get("Lead Tier") == "Hot")
-        warm  = sum(1 for r in crm_records if r.get("Lead Tier") == "Warm")
-        cold  = sum(1 for r in crm_records if r.get("Lead Tier") == "Cold")
+        hot   = sum(1 for r in crm_records if r.get("Priority") == "High")
+        warm  = sum(1 for r in crm_records if r.get("Priority") == "Medium")
+        cold  = sum(1 for r in crm_records if r.get("Priority") == "Low")
         logger.info(
             f"CRM Export formatted {len(crm_records)} leads — "
-            f"Hot: {hot} | Warm: {warm} | Cold: {cold}"
+            f"High: {hot} | Medium: {warm} | Low: {cold}"
         )
         return crm_records
 

@@ -37,8 +37,9 @@ Pipeline flow
           Outputs verified_emails, risky_emails, invalid_emails, best_email.
 
   Step 10 Module 7 -- AI Lead Scoring
-          Calculates lead_score (0-100) and lead_tier (Hot/Warm/Cold) based
-          on data completeness, reachability, and qualification.
+          Calculates lead_score (0-100) and priority (High/Medium/Low) based
+          on a 4-pillar model: contact reachability, digital presence,
+          profile depth, and credibility signals.
 
   Step 11 Module 8 -- Deduplication & Quality Filtering
           Drops unqualified leads (Cold tier, no contact points, invalid emails)
@@ -256,9 +257,9 @@ def run_pipeline(params: dict) -> None:
     total_risky_emails    = sum(len(c.risky_emails) for c in email_verified if c)
     total_invalid_emails  = sum(len(c.invalid_emails) for c in email_verified if c)
     
-    hot_leads  = sum(1 for c in leads_filtered if c.lead_tier == "Hot")
-    warm_leads = sum(1 for c in leads_filtered if c.lead_tier == "Warm")
-    cold_leads = sum(1 for c in leads_filtered if c.lead_tier == "Cold")
+    high_leads   = sum(1 for c in leads_filtered if c.priority == "High")
+    medium_leads = sum(1 for c in leads_filtered if c.priority == "Medium")
+    low_leads    = sum(1 for c in leads_filtered if c.priority == "Low")
     dropped    = len(leads_scored) - len(leads_filtered)
 
     # ── Summary ───────────────────────────────────────────────────────────────
@@ -273,8 +274,8 @@ def run_pipeline(params: dict) -> None:
     print(f"  Emails verified (valid) : {total_verified_emails}")
     print(f"  Emails risky (role/gen) : {total_risky_emails}")
     print(f"  Emails invalid          : {total_invalid_emails}")
-    print(f"  Leads filtered/dropped  : {dropped} (unqualified/dupes)")
-    print(f"  Final Qualified Tiers   : Hot: {hot_leads} | Warm: {warm_leads} | Cold: {cold_leads}")
+    print(f"  Leads filtered/dropped  : {dropped} (Low priority / unqualified / dupes)")
+    print(f"  Priority Breakdown      : High: {high_leads} | Medium: {medium_leads} | Low: {low_leads}")
     print()
     print("  Output files (CRM-ready):")
     print("  * output/current/current_leads.csv   <- this run's results")

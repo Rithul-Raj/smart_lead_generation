@@ -84,8 +84,8 @@ class LeadFilter:
                 dropped_reasons["all_emails_invalid"] += 1
                 continue
 
-            # ── 3. Quality: Tier Filtering ────────────────────────────────────
-            if lead.lead_tier == "Cold":
+            # ── 3. Quality: Priority Filtering ────────────────────────────────────
+            if lead.priority == "Low":
                 dropped_reasons["cold_tier"] += 1
                 continue
 
