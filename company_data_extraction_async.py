@@ -42,7 +42,6 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Union, Optional
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
-from output_exporter import LIVE_BUFFER_CSV   # single source of truth for the live buffer path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("company_data_extraction_async")
