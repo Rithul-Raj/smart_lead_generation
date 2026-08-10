@@ -40,11 +40,15 @@ Pipeline flow
           Calculates lead_score (0-100) and lead_tier (Hot/Warm/Cold) based
           on data completeness, reachability, and qualification.
 
-  Step 11 Save current results
+  Step 11 Module 8 -- Deduplication & Quality Filtering
+          Drops unqualified leads (Cold tier, no contact points, invalid emails)
+          and deduplicates intra-run by website, LinkedIn, and phone.
+
+  Step 12 Save current results
           output/current/current_leads.csv  <- this run's results
           output/current/current_leads.json <- this run's results
 
-  Step 12 Merge current into master (immediately, every run)
+  Step 13 Merge current into master (immediately, every run)
           output/master/master_leads.csv    <- all-time accumulated data
           output/master/master_leads.json   <- all-time accumulated data
           Master is ALWAYS up to date after every run.
@@ -67,6 +71,7 @@ from contact_discovery import ContactDiscovery
 from lead_data_enrichment import LeadDataEnricher
 from email_verification import EmailVerifier
 from ai_lead_scoring import AILeadScorer
+from lead_filtering import LeadFilter
 from output_exporter import (
     save_current_output,
     merge_current_to_master,
@@ -202,13 +207,21 @@ def run_pipeline(params: dict) -> None:
     logger.info(f"Step 10 [OK] AI Lead Scoring done for {len(leads_scored)} companies.")
     print()
 
-    # ── Step 11: Save current output ────────────────────────────────────────
-    logger.info("Step 11 - Saving current output files ...")
-    save_current_output(leads_scored, search_params=params)
+    # ── Step 11: Deduplication & Quality Filtering ──────────────────────────
+    logger.info("Step 11 - Module 8: Lead Filtering starting ...")
+    filterer = LeadFilter()
+    leads_filtered = filterer.filter_leads(leads_scored)
+
+    logger.info(f"Step 11 [OK] Filtering done. {len(leads_filtered)} leads passed quality checks.")
     print()
 
-    # ── Step 12: Merge current into master IMMEDIATELY ──────────────────────
-    logger.info("Step 12 - Merging current leads into master ...")
+    # ── Step 12: Save current output ────────────────────────────────────────
+    logger.info("Step 12 - Saving current output files ...")
+    save_current_output(leads_filtered, search_params=params)
+    print()
+
+    # ── Step 13: Merge current into master IMMEDIATELY ──────────────────────
+    logger.info("Step 13 - Merging current leads into master ...")
     merge_current_to_master()
     print()
 
@@ -229,9 +242,10 @@ def run_pipeline(params: dict) -> None:
     total_risky_emails    = sum(len(c.risky_emails) for c in email_verified if c)
     total_invalid_emails  = sum(len(c.invalid_emails) for c in email_verified if c)
     
-    hot_leads  = sum(1 for c in leads_scored if c.lead_tier == "Hot")
-    warm_leads = sum(1 for c in leads_scored if c.lead_tier == "Warm")
-    cold_leads = sum(1 for c in leads_scored if c.lead_tier == "Cold")
+    hot_leads  = sum(1 for c in leads_filtered if c.lead_tier == "Hot")
+    warm_leads = sum(1 for c in leads_filtered if c.lead_tier == "Warm")
+    cold_leads = sum(1 for c in leads_filtered if c.lead_tier == "Cold")
+    dropped    = len(leads_scored) - len(leads_filtered)
 
     # ── Summary ───────────────────────────────────────────────────────────────
     print("=" * 60)
@@ -245,7 +259,8 @@ def run_pipeline(params: dict) -> None:
     print(f"  Emails verified (valid) : {total_verified_emails}")
     print(f"  Emails risky (role/gen) : {total_risky_emails}")
     print(f"  Emails invalid          : {total_invalid_emails}")
-    print(f"  Lead Tiers              : Hot: {hot_leads} | Warm: {warm_leads} | Cold: {cold_leads}")
+    print(f"  Leads filtered/dropped  : {dropped} (unqualified/dupes)")
+    print(f"  Final Qualified Tiers   : Hot: {hot_leads} | Warm: {warm_leads} | Cold: {cold_leads}")
     print()
     print("  Output files:")
     print("  * output/current/current_leads.csv   <- this run's results")
@@ -255,7 +270,6 @@ def run_pipeline(params: dict) -> None:
     print("=" * 60)
 
     # ── Future modules placeholders ───────────────────────────────────────────
-    # TODO Step 13: Module 8 -- Deduplication & Quality Filtering
     # TODO Step 14: Module 9 -- Output Formatting & CRM Export
 
 
