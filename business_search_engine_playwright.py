@@ -163,22 +163,23 @@ class BusinessSearchEnginePlaywright:
         return results[:num_leads]
 
 
-# ---------------- Standalone test run ----------------
+# ── How to run this module ────────────────────────────────────────────────────
+#
+# This module is now called from the central pipeline entry point:
+#
+#     python main.py
+#
+# main.py opens the GUI input form so you can fill in your search parameters
+# (number of leads, location, industry) without editing any code.
+#
+# If you need to test this module in isolation, you can still do:
+#
+#     from business_search_engine_playwright import BusinessSearchEnginePlaywright
+#     engine = BusinessSearchEnginePlaywright(headless=False)
+#     results = engine.search(num_leads=5, location="Bangalore, India", industry="IT")
+#     print(results)
+#
+# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    from output_exporter import export_to_csv, export_to_json
-
-    # CHANGE THESE THREE VALUES to search for whatever you want:
-    engine = BusinessSearchEnginePlaywright(headless=False)  # False = watch it work
-    candidates = engine.search(
-        num_leads=10,
-        location="Bangalore, India",
-        industry="Information Technology",
-    )
-
-    print(f"\n{len(candidates)} candidates found:\n")
-    for c in candidates:
-        print({k: v for k, v in asdict(c).items() if k != "raw"})
-
-    if candidates:
-        export_to_csv(candidates)
-        export_to_json(candidates)
+    print("Run 'python main.py' to launch the full pipeline with the GUI input form.")
+    print("See the comment block above for how to test this module in isolation.")
