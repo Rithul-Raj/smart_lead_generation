@@ -45,9 +45,6 @@ _CRM_FIELD_MAP = [
     ("phones_discovered",   "Additional Phones"),  # crawled from website
     # ── Company identity ───────────────────────────────────────────────────
     ("company_name",        "Company Name"),
-    ("category",            "Business Category"),
-    ("industry",            "Industry"),
-    ("location",            "Search Location"),
     ("address",             "Full Address"),
     ("website",             "Website"),
     # ── Company profile ────────────────────────────────────────────────────
