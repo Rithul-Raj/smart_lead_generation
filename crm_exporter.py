@@ -39,10 +39,7 @@ logger = logging.getLogger("crm_exporter")
 # "Email" is handled separately via smart fallback logic (see _format_one)
 # ─────────────────────────────────────────────────────────────────────────────
 _CRM_FIELD_MAP = [
-    # ── Qualification ──────────────────────────────────────────────────────
-    ("priority",            "Priority"),           # High / Medium / Low
-    ("lead_score",          "Lead Score"),          # 0–100
-    # ── Contact — EMAIL handled separately below ────────────────────────────
+    # ── Contact — EMAIL handled separately (smart fallback logic) ────────────
     # ── Contact — Phone ────────────────────────────────────────────────────
     ("phone",               "Phone"),              # Maps-listed phone
     ("phones_discovered",   "Additional Phones"),  # crawled from website
@@ -59,6 +56,9 @@ _CRM_FIELD_MAP = [
     ("company_description", "Company Description"),
     # ── Reputation ─────────────────────────────────────────────────────────
     ("rating",              "Google Rating"),
+    # ── AI Qualification (last columns) ────────────────────────────────────
+    ("priority",            "Priority"),           # High / Medium / Low
+    ("lead_score",          "Lead Score"),          # 0–100
 ]
 
 
@@ -161,17 +161,12 @@ class CRMExporter:
         """Transform a single raw lead dict into a CRM-ready ordered dict."""
         crm: Dict[str, Any] = {}
 
-        # First two columns: Priority + Lead Score
-        crm["Priority"]   = self._format_value(row.get("priority"))
-        crm["Lead Score"] = self._format_value(row.get("lead_score"))
-
-        # Smart single Email column — inserted right after Lead Score
+        # First column: smart Email (best available)
         crm["Email"] = self._resolve_email(row)
 
-        # Rest of columns from the field map (phone, company details, etc.)
+        # Rest of columns from the field map (phone, company details, rating,
+        # then Priority + Lead Score last)
         for internal_key, crm_header in _CRM_FIELD_MAP:
-            if crm_header in ("Priority", "Lead Score"):
-                continue   # already written above
             crm[crm_header] = self._format_value(row.get(internal_key))
 
         return crm
