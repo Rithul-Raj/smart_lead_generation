@@ -105,9 +105,24 @@ def _write_csv(rows: List[dict], filepath: str) -> None:
 
 
 def _write_json(rows: List[dict], filepath: str, meta: dict = None) -> None:
+    """
+    Write leads to a JSON file.
+
+    JSON structure (matches PDF spec section 20):
+      {
+        "request_id": "LG-YYYYMMDD-HHMMSS",
+        "location": "...",
+        "industry": "...",
+        "total_leads": N,
+        "generated_at": "ISO timestamp",
+        "leads": [ ... ]
+      }
+    """
+    now = datetime.now()
     payload = {
+        "request_id": f"LG-{now.strftime('%Y%m%d-%H%M%S')}",
         "total_leads": len(rows),
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": now.isoformat(),
     }
     if meta:
         payload.update(meta)
@@ -157,17 +172,25 @@ def save_current_output(candidates: List, search_params: dict = None) -> None:
     Save the results of the LATEST run to current_leads.csv + current_leads.json.
     Both files are OVERWRITTEN completely each time.
 
+    JSON structure matches PDF spec section 20:
+      request_id, location, industry, total_leads, generated_at, leads[]
+
     Args:
-        candidates   : list of dataclass objects (e.g. EnrichedCompany) OR plain dicts.
-        search_params: optional dict with the search parameters used this run
-                       (e.g. {"location": "Bangalore", "industry": "IT", "num_leads": 10}).
-                       Stored in the JSON for reference.
+        candidates   : list of dataclass objects OR plain dicts (CRM-formatted).
+        search_params: dict with keys: location, industry, num_leads (from input form).
     """
     _ensure_output_dir()
     rows = _rows_from_dataclasses(candidates)
+    params = search_params or {}
+
+    meta = {
+        "location":  params.get("location", ""),
+        "industry":  params.get("industry", ""),
+        "search_params": params,
+    }
 
     _write_csv(rows, CURRENT_CSV)
-    _write_json(rows, CURRENT_JSON, meta={"search_params": search_params or {}})
+    _write_json(rows, CURRENT_JSON, meta=meta)
 
     print(f"[OK] Current output saved  ->  {len(rows)} leads")
     print(f"     CSV : {CURRENT_CSV}")

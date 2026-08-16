@@ -1,0 +1,25 @@
+# Smart Lead Generation — Python Dependencies
+# =============================================
+# Install all dependencies:
+#   pip install -r requirements.txt
+#
+# After installing, set up the browser engine:
+#   playwright install chromium
+#
+# Then run the pipeline:
+#   python main.py
+
+# ── Web scraping & browser automation ─────────────────────────────────────────
+playwright==1.62.0          # async Chromium automation (Module 2, 3, 4, 5)
+beautifulsoup4==4.13.3      # HTML parsing (Module 3, 4, 5)
+requests==2.32.3            # HTTP fallback requests
+
+# ── Email verification ─────────────────────────────────────────────────────────
+dnspython==2.8.0            # MX record DNS lookup (Module 6)
+
+# ── GUI input form ─────────────────────────────────────────────────────────────
+# tkinter ships with Python on Windows/macOS — no pip install needed.
+# Linux only: sudo apt-get install python3-tk
+
+# ── Standard library only (no install required) ───────────────────────────────
+# asyncio, csv, json, os, re, logging, dataclasses, datetime, socket, threading
